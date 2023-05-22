@@ -1,0 +1,161 @@
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+
+/* 
+AUTHOR: Kevin Yin
+DATE: Oct. 6, 2021
+
+This file contains PostgreSQL code to clean and abstract power line and station data from 
+OpenStreetMap that has already been filtered using Osmosis and exported to a PostgreSQL database. 
+Inside the database should be the 'planet_osm_line', 'planet_osm_polygon', 'planet_osm_point tables' 
+for the following queries to run. The outputs are the 'links', 'vertices' and 'intersections' .csv tables, which
+describe power lines, stations, and their intersections respectively.
+*/
+
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+/*
+STEP 1: Creating power_line and power_station tables from osm2pgsql tables
+*/
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+
+-- Creating tables for power lines, and stations, where stations can be either nodes or ways
+CREATE TABLE power_lines AS 
+SELECT osm_id AS line_id,
+	   power,
+	   cables,
+	   voltage,
+	   wires,
+	   tags,
+	   ST_Transform(way, 4326) AS way
+FROM planet_osm_line WHERE power='line' OR power='cable';
+
+CREATE TABLE power_station_nodes AS 
+SELECT osm_id AS station_id,
+	   power,
+	   cables,
+	   voltage,
+	   wires,
+	   tags,
+	   ST_Transform(way, 4326) AS way
+FROM planet_osm_point WHERE power IN ('station','substation','plant','transformer');
+
+CREATE TABLE power_station_poly AS 
+SELECT osm_id AS station_id,
+	   power,
+	   cables,
+	   voltage,
+	   wires,
+	   tags,
+	   ST_Transform(way, 4326) AS way
+FROM planet_osm_polygon WHERE power IN ('station','substation','plant','transformer');
+
+
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+/*
+STEP 2: Merging lines that share a line_id
+*/
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+
+-- Find and merge lines with shared ids
+CREATE TABLE merged_on_id AS
+SELECT line_id, 
+	   power,
+	   cables,
+	   voltage,
+	   wires,
+	   tags,
+	   ST_LineMerge(ST_Union(way)) as way 
+FROM power_lines 
+GROUP BY line_id, power, cables, voltage, wires, tags 
+HAVING COUNT(*) > 1;
+
+DELETE FROM power_lines
+WHERE power_lines.line_id IN (SELECT line_id FROM merged_on_id);
+
+INSERT INTO power_lines(line_id, power, cables, voltage, wires, tags, way)
+SELECT * FROM merged_on_id;
+
+-- Dropping temp tables
+DROP TABLE merged_on_id;
+
+
+
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+/*
+STEP 3: Buffering node stations and combining station tables into power_stations table
+*/
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+
+-- Delete nodes that intersect with polygons to avoid double counting
+DELETE FROM power_station_nodes
+WHERE station_id IN
+	(SELECT X.station_id
+	 FROM power_station_nodes X, power_station_poly Y
+	 WHERE ST_Intersects(X.way, Y.way));
+
+
+-- Create table of all power stations; polygon and buffered nodes
+CREATE TABLE power_stations AS
+SELECT * FROM power_station_poly;
+INSERT INTO power_stations (
+				station_id,
+				power,
+				cables,
+				voltage,
+				wires,
+				tags,
+				way )
+SELECT station_id,
+	   power,
+	   cables,
+	   voltage,
+	   wires,
+	   tags,
+	   ST_Buffer(way, 0.001, 'quad_segs=4') AS way
+FROM power_station_nodes;
+
+-- Dropping temp tables
+DROP TABLE power_station_nodes;
+DROP TABLE power_station_poly;
+
+
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+/*
+STEP 4: Creating static tables to loop over
+*/
+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+
+-- Give static names to the lines and stations tables that can be referred to each loop
+CREATE TABLE power_lines_orig AS
+SELECT line_id, 
+	   power,
+	   cables,
+	   TRANSLATE 
+	   (
+	   voltage,
+	   '; /=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV',
+	   ','
+	   ) AS voltage,
+	   wires,
+	   tags,
+	   way
+FROM power_lines;
+DROP TABLE power_lines;
+ALTER TABLE power_stations
+RENAME TO power_stations_orig;
+
+ALTER TABLE power_lines_orig
+DROP COLUMN tags;
+ALTER TABLE power_stations_orig
+DROP COLUMN tags,
+DROP COLUMN cables,
+DROP COLUMN wires;
+
