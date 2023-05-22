@@ -1,4 +1,4 @@
-# clean-growth
+# Clean Growth
 For Arkolakis and Walsh (2023). An algorithm to construct a power grid model from Open Street Map data with accompanying figures and analysis.
 
 <p align="center">
@@ -10,21 +10,7 @@ For Arkolakis and Walsh (2023). An algorithm to construct a power grid model fro
 
 # Introduction
 
-The code here was written as part of my research with a group of students from the University of Toronto studying mobile money in Kenya and the barriers to last mile financial inclusion. Here I use FSD-Kenya household-level survey data to identify the socioeconomic characteristics that correlate with, and predict, a person's likelihood of *not* being reached by mobile money services. It includes data cleaning, linear regression and regularized logistic regression to predict non-users. 
-
-We were interested in non-users as opposed to users in alignment with the theme of understanding minority populations that are **left behind** by social interventions. We are particularly interested in the features that are selected and their corresponding coefficients as a rough guide to their importance. Our research on this topic is part of a broader initiative at the university called the
-[Reach Alliance](http://reachalliance.org/) at the [Munk School of Global Affairs and Public Policy](https://munkschool.utoronto.ca/) which seeks to understand the ways we can get valuable services to these 'hardest-to-reach' groups. 
-
-
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/74945619/104352088-77312f00-54c3-11eb-9697-81355fa61d05.png" 
-       alt="County Map" 
-       width="400"/>
-  <img src="https://user-images.githubusercontent.com/74945619/104352471-f6266780-54c3-11eb-8539-033951317ed1.png" 
-       alt="Data Map" 
-       width="400"/>
-</p>
-  
+This project is part of Arkolakis and Walsh (2023).
 
 # Contents
 
