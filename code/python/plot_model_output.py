@@ -29,7 +29,7 @@ except ImportError:
 finally:
     import numpy as np
 
-# GeoPandas 0.12.2
+# GeoPandas 1.1.1
 try:
     import geopandas as gpd
 except ImportError:

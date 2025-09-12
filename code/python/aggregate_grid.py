@@ -34,7 +34,7 @@ except ImportError:
 finally:
     import numpy as np
 
-# GeoPandas 0.12.2
+# GeoPandas 1.1.1
 try:
     import geopandas as gpd
 except ImportError:
@@ -143,13 +143,13 @@ df_s2slines = df_s2slines.set_crs("EPSG:4326")
 csr_shp = csr_shp.to_crs("EPSG:4326")
 
 # calculate which region intersects point_A in a given line
-edges = gpd.sjoin(df_s2slines, csr_shp, how='left', op='intersects')
+edges = gpd.sjoin(df_s2slines, csr_shp, how='left', predicate='intersects')
 edges = edges[['line_id', 'point_A', 'point_B', 'line', 'csr_id', 'voltage_kv', 'max_capacity_mw']]
 
 # set point_B to the geometry and calculate which region intersects point_B
 edges = gpd.GeoDataFrame(edges, geometry = 'point_B')
 edges = edges.set_crs("EPSG:4326")
-edges = gpd.sjoin(edges, csr_shp, how='left', op='intersects')
+edges = gpd.sjoin(edges, csr_shp, how='left', predicate='intersects')
 
 
 # clean up the edges table 
@@ -221,7 +221,7 @@ df_canada_pop['y'] = df_canada_pop['rast_centroid'].y
 # assign block-centroids to provinces
 canada_shp = csr_shp[csr_shp['ctry_code'] == 'CA']
 canada_shp = gpd.GeoDataFrame(canada_shp, geometry = 'geometry')
-df_canada_pop = gpd.sjoin(df_canada_pop, canada_shp[['csr_id', 'geometry']], how='left', op='within')
+df_canada_pop = gpd.sjoin(df_canada_pop, canada_shp[['csr_id', 'geometry']], how='left', predicate='within')
 df_canada_pop.dropna(subset=['csr_id'], inplace=True)
 
 # sum population by province
@@ -554,7 +554,7 @@ df_gpp = gpd.GeoDataFrame(df_gpp, geometry = 'coordinates')
 # label each power plant with its commuter zone (by finding intersections)
 csr_shp = csr_shp.to_crs("EPSG:4326")
 df_gpp = df_gpp.set_crs("EPSG:4326")
-df_gpp = gpd.sjoin(df_gpp, csr_shp[['csr_id', 'geometry']], how='left', op='intersects')
+df_gpp = gpd.sjoin(df_gpp, csr_shp[['csr_id', 'geometry']], how='left', predicate='intersects')
 
 # drop those with no csr_id because they're in a country outside of the shapefile
 df_gpp = df_gpp[df_gpp['csr_id'].notna()]
@@ -568,7 +568,7 @@ df_agg_capacity = df_agg_capacity[['capacity_mw']]
 df_gpp_renw['coordinates'] = [Point(xy) for xy in zip(df_gpp_renw['longitude'], df_gpp_renw['latitude'])]
 df_gpp_renw = gpd.GeoDataFrame(df_gpp_renw, geometry = 'coordinates')
 df_gpp_renw = df_gpp_renw.set_crs("EPSG:4326")
-df_gpp_renw = gpd.sjoin(df_gpp_renw, csr_shp[['csr_id', 'geometry']], how='left', op='intersects')
+df_gpp_renw = gpd.sjoin(df_gpp_renw, csr_shp[['csr_id', 'geometry']], how='left', predicate='intersects')
 
 df_agg_renw = df_gpp_renw.groupby(['csr_id']).sum('capacity_mw')
 df_agg_renw = df_agg_renw[['capacity_mw']]
@@ -579,7 +579,7 @@ df_agg_renw = df_agg_renw.rename(columns={ 'capacity_mw': 'rnw_capacity_mw' })
 df_gpp_fossil['coordinates'] = [Point(xy) for xy in zip(df_gpp_fossil['longitude'], df_gpp_fossil['latitude'])]
 df_gpp_fossil = gpd.GeoDataFrame(df_gpp_fossil, geometry = 'coordinates')
 df_gpp_fossil = df_gpp_fossil.set_crs("EPSG:4326")
-df_gpp_fossil = gpd.sjoin(df_gpp_fossil, csr_shp[['csr_id', 'geometry']], how='left', op='intersects')
+df_gpp_fossil = gpd.sjoin(df_gpp_fossil, csr_shp[['csr_id', 'geometry']], how='left', predicate='intersects')
 
 df_agg_fossil = df_gpp_fossil.groupby(['csr_id']).sum('capacity_mw')
 df_agg_fossil = df_agg_fossil[['capacity_mw']]

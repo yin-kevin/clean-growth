@@ -34,7 +34,7 @@ except ImportError:
 finally:
     import numpy as np
 
-# GeoPandas 0.12.2
+# GeoPandas 1.1.1
 try:
     import geopandas as gpd
 except ImportError:
@@ -258,7 +258,7 @@ df_canada_pop['y'] = df_canada_pop['rast_centroid'].y
 # assign block-centroids to provinces
 canada_shp = csr_shp[csr_shp['ctry_code'] == 'CA']
 canada_shp = gpd.GeoDataFrame(canada_shp, geometry = 'geometry')
-df_canada_pop = gpd.sjoin(df_canada_pop, canada_shp[['csr_id', 'geometry']], how='left', op='within')
+df_canada_pop = gpd.sjoin(df_canada_pop, canada_shp[['csr_id', 'geometry']], how='left', predicate='within')
 df_canada_pop.dropna(subset=['csr_id'], inplace=True)
 
 # sum population by province
@@ -533,7 +533,7 @@ df_gpp = gpd.GeoDataFrame(df_gpp, geometry = 'coordinates')
 # label each power plant with its commuter zone (by finding intersections)
 us_shp = us_shp.to_crs("EPSG:4326")
 df_gpp = df_gpp.set_crs("EPSG:4326")
-df_gpp = gpd.sjoin(df_gpp, us_shp[['csr_id', 'geometry']], how='left', op='intersects')
+df_gpp = gpd.sjoin(df_gpp, us_shp[['csr_id', 'geometry']], how='left', predicate='intersects')
 
 df_us_plants = df_gpp[df_gpp['csr_id'].notnull()]
 df_us_plants = gpd.GeoDataFrame(df_us_plants, geometry = 'coordinates')
@@ -6733,7 +6733,7 @@ fig.savefig(os.path.join(output_path, "turkey_map_fossilcap.png"), dpi=200, bbox
 #%% us, plot all lines
 
 # find lines in the us
-us_lines =  gpd.sjoin(lines, us_shp[['csr_id', 'geometry']], how='left', op='intersects')
+us_lines =  gpd.sjoin(lines, us_shp[['csr_id', 'geometry']], how='left', predicate='intersects')
 us_lines = us_lines[us_lines['csr_id'].notnull()]
 
 fig, ax = plt.subplots(figsize=(20,20), frameon=False)
